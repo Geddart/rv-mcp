@@ -8,7 +8,7 @@ mcp = FastMCP("rv-mcp")
 client = RvClient()
 
 # Import tool modules to trigger @mcp.tool() registration
-from .tools import execute, playback, sources, compare, color  # noqa: E402, F401
+from .tools import execute, playback, sources, compare, color, ocio  # noqa: E402, F401
 
 
 @mcp.prompt()
