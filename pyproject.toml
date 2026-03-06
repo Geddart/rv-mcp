@@ -1,0 +1,18 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rv-mcp"
+version = "0.1.0"
+description = "MCP server bridging Claude to Autodesk/Tweak RV media review"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp[cli]>=1.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[project.scripts]
+rv-mcp = "src.server:main"
