@@ -27,10 +27,10 @@ def _find_ocio_node_in_pipeline(pipeline: str, ocio_type: str) -> str:
     """Find an existing OCIO node in a pipeline group. Returns node name or empty string."""
     return client.eval_mu(
         '{ require commands;'
-        f' let members = nodesInGroup("{pipeline}");'
-        f' let result = "";'
-        f' for_each (m; members) if (nodeType(m) == "{ocio_type}") result = m;'
-        ' result;'
+        f' let _members = nodesInGroup("{pipeline}");'
+        f' let _found = "";'
+        f' for_each (_m; _members) if (nodeType(_m) == "{ocio_type}") _found = _m;'
+        ' _found;'
         ' }'
     )
 
@@ -119,8 +119,8 @@ def set_ocio_colorspace(colorspace: str, source_node: str | None = None) -> str:
         src = escape_mu_string(source_node)
     else:
         src = client.eval_mu(
-            '{ require commands; let s = nodesOfType("RVSourceGroup");'
-            ' if (s.size() > 0) s[0] else ""; }'
+            '{ require commands; let _srcs = nodesOfType("RVSourceGroup");'
+            ' if (_srcs.size() > 0) _srcs[0] else ""; }'
         )
         if not src:
             return json.dumps({"error": "no sources loaded"})
@@ -199,8 +199,8 @@ def set_ocio_look(look: str, direction: str = "forward", source_node: str | None
         src = escape_mu_string(source_node)
     else:
         src = client.eval_mu(
-            '{ require commands; let s = nodesOfType("RVSourceGroup");'
-            ' if (s.size() > 0) s[0] else ""; }'
+            '{ require commands; let _srcs = nodesOfType("RVSourceGroup");'
+            ' if (_srcs.size() > 0) _srcs[0] else ""; }'
         )
         if not src:
             return json.dumps({"error": "no sources loaded"})
@@ -233,45 +233,45 @@ def get_ocio_state() -> str:
     """
     return client.eval_mu(
         r'{ require commands;'
-        r' let ocioFiles = nodesOfType("OCIOFile");'
-        r' let ocioDisplays = nodesOfType("OCIODisplay");'
-        r' let ocioLooks = nodesOfType("OCIOLook");'
-        r' let result = "{\"sources\":[";'
-        r' for_index (i; ocioFiles) {'
-        r'     if (i > 0) result += ",";'
-        r'     let n = ocioFiles[i];'
-        r'     let inCS = getStringProperty(n + ".ocio.inColorSpace").front();'
-        r'     let outCS = getStringProperty(n + ".ocio_color.outColorSpace").front();'
-        r'     let active = getIntProperty(n + ".ocio.active").front();'
-        r'     result += "{\"node\":\"" + n + "\""'
-        r'         + ",\"inColorSpace\":\"" + inCS + "\""'
-        r'         + ",\"outColorSpace\":\"" + outCS + "\""'
-        r'         + ",\"active\":" + string(active) + "}";'
+        r' let _oFiles = nodesOfType("OCIOFile");'
+        r' let _oDisps = nodesOfType("OCIODisplay");'
+        r' let _oLooks = nodesOfType("OCIOLook");'
+        r' let _r = "{\"sources\":[";'
+        r' for_index (_i; _oFiles) {'
+        r'     if (_i > 0) _r += ",";'
+        r'     let _n = _oFiles[_i];'
+        r'     let _inCS = getStringProperty(_n + ".ocio.inColorSpace").front();'
+        r'     let _outCS = getStringProperty(_n + ".ocio_color.outColorSpace").front();'
+        r'     let _act = getIntProperty(_n + ".ocio.active").front();'
+        r'     _r += "{\"node\":\"" + _n + "\""'
+        r'         + ",\"inColorSpace\":\"" + _inCS + "\""'
+        r'         + ",\"outColorSpace\":\"" + _outCS + "\""'
+        r'         + ",\"active\":" + string(_act) + "}";'
         r' }'
-        r' result += "],\"display\":[";'
-        r' for_index (i; ocioDisplays) {'
-        r'     if (i > 0) result += ",";'
-        r'     let n = ocioDisplays[i];'
-        r'     let display = getStringProperty(n + ".ocio_display.display").front();'
-        r'     let view = getStringProperty(n + ".ocio_display.view").front();'
-        r'     let active = getIntProperty(n + ".ocio.active").front();'
-        r'     result += "{\"node\":\"" + n + "\""'
-        r'         + ",\"display\":\"" + display + "\""'
-        r'         + ",\"view\":\"" + view + "\""'
-        r'         + ",\"active\":" + string(active) + "}";'
+        r' _r += "],\"display\":[";'
+        r' for_index (_j; _oDisps) {'
+        r'     if (_j > 0) _r += ",";'
+        r'     let _dn = _oDisps[_j];'
+        r'     let _disp = getStringProperty(_dn + ".ocio_display.display").front();'
+        r'     let _view = getStringProperty(_dn + ".ocio_display.view").front();'
+        r'     let _dAct = getIntProperty(_dn + ".ocio.active").front();'
+        r'     _r += "{\"node\":\"" + _dn + "\""'
+        r'         + ",\"display\":\"" + _disp + "\""'
+        r'         + ",\"view\":\"" + _view + "\""'
+        r'         + ",\"active\":" + string(_dAct) + "}";'
         r' }'
-        r' result += "],\"looks\":[";'
-        r' for_index (i; ocioLooks) {'
-        r'     if (i > 0) result += ",";'
-        r'     let n = ocioLooks[i];'
-        r'     let look = getStringProperty(n + ".ocio_look.look").front();'
-        r'     let active = getIntProperty(n + ".ocio.active").front();'
-        r'     result += "{\"node\":\"" + n + "\""'
-        r'         + ",\"look\":\"" + look + "\""'
-        r'         + ",\"active\":" + string(active) + "}";'
+        r' _r += "],\"looks\":[";'
+        r' for_index (_k; _oLooks) {'
+        r'     if (_k > 0) _r += ",";'
+        r'     let _ln = _oLooks[_k];'
+        r'     let _look = getStringProperty(_ln + ".ocio_look.look").front();'
+        r'     let _lAct = getIntProperty(_ln + ".ocio.active").front();'
+        r'     _r += "{\"node\":\"" + _ln + "\""'
+        r'         + ",\"look\":\"" + _look + "\""'
+        r'         + ",\"active\":" + string(_lAct) + "}";'
         r' }'
-        r' result += "]}";'
-        r' result;'
+        r' _r += "]}";'
+        r' _r;'
         r' }'
     )
 
@@ -293,10 +293,10 @@ def clear_ocio(target: str = "all") -> str:
     if target in ("linearize", "all"):
         # Find all linearize pipelines that have OCIOFile and reset them
         parts.append(
-            ' let ocioFiles = nodesOfType("OCIOFile");'
-            ' for_each (n; ocioFiles) {'
-            '     let grp = nodeGroup(n);'
-            '     setStringProperty(grp + ".pipeline.nodes",'
+            ' let _cFiles = nodesOfType("OCIOFile");'
+            ' for_each (_cf; _cFiles) {'
+            '     let _cfg = nodeGroup(_cf);'
+            '     setStringProperty(_cfg + ".pipeline.nodes",'
             '         string[] {"RVLinearize", "RVLensWarp"}, true);'
             ' }'
         )
@@ -304,10 +304,10 @@ def clear_ocio(target: str = "all") -> str:
 
     if target in ("display", "all"):
         parts.append(
-            ' let ocioDisplays = nodesOfType("OCIODisplay");'
-            ' for_each (n; ocioDisplays) {'
-            '     let grp = nodeGroup(n);'
-            '     setStringProperty(grp + ".pipeline.nodes",'
+            ' let _cDisps = nodesOfType("OCIODisplay");'
+            ' for_each (_cd; _cDisps) {'
+            '     let _cdg = nodeGroup(_cd);'
+            '     setStringProperty(_cdg + ".pipeline.nodes",'
             '         string[] {"RVDisplayColor"}, true);'
             ' }'
         )
@@ -315,10 +315,10 @@ def clear_ocio(target: str = "all") -> str:
 
     if target in ("look", "all"):
         parts.append(
-            ' let ocioLooks = nodesOfType("OCIOLook");'
-            ' for_each (n; ocioLooks) {'
-            '     let grp = nodeGroup(n);'
-            '     setStringProperty(grp + ".pipeline.nodes",'
+            ' let _cLooks = nodesOfType("OCIOLook");'
+            ' for_each (_cl; _cLooks) {'
+            '     let _clg = nodeGroup(_cl);'
+            '     setStringProperty(_clg + ".pipeline.nodes",'
             '         string[] {"RVLookLUT"}, true);'
             ' }'
         )

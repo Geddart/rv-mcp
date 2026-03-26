@@ -17,7 +17,7 @@ def rv_assistant() -> str:
     return (
         "You are an RV media review assistant connected via MCP.\n"
         "Use dedicated tools when available; fall back to execute_mu for advanced ops.\n"
-        "RV must be running with -network flag on port 45124.\n"
+        "RV must be running with -network flag on port 45125.\n"
         "Commands are executed as Mu code via remote-eval.\n"
         "Use 'require commands;' at the start of Mu blocks that call command functions.\n"
     )

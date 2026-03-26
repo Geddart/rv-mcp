@@ -1,19 +1,21 @@
 import atexit
+import os
 import socket
 import threading
 import time
 from typing import Optional
 
 
-DEFAULT_HOST = "127.0.0.1"
-DEFAULT_PORT = 45124
+DEFAULT_HOST = os.environ.get("RV_MCP_HOST", "127.0.0.1")
+DEFAULT_PORT = int(os.environ.get("RV_MCP_PORT", "45124"))
 DEFAULT_TIMEOUT = 30.0
 
 
 class RvClient:
     """Persistent TCP client that speaks RV's native network protocol.
 
-    RV must be running with the -network flag (default port 45124).
+    RV must be running with the -network flag (default port 45125).
+    Override with RV_MCP_HOST / RV_MCP_PORT env vars.
     Protocol based on RvCommunicator from rvNetwork.py, modernized for Python 3.
     """
 

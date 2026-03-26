@@ -6,7 +6,7 @@ No plugin required inside RV. Uses RV's built-in network listener with Mu script
 
 ## Requirements
 
-- **RV 2022.3.1+** with network mode enabled (`-network` flag)
+- **OpenRV** (or RV 2022.3.1+) with network mode enabled
 - **Python 3.10+**
 - **[uv](https://docs.astral.sh/uv/)** package manager
 
@@ -14,14 +14,12 @@ No plugin required inside RV. Uses RV's built-in network listener with Mu script
 
 ### 1. Start RV with networking
 
+Enable networking in RV via **RV → Networking → Enable Network** (default port **45125**).
+
+Or from the command line:
+
 ```bash
-rv -network
-```
-
-RV will listen on port **45124** (default). On Windows:
-
-```cmd
-"C:\Program Files\ShotGrid\RV-2022.3.1\bin\rv.exe" -network -networkPort 45124
+rv -network -networkPort 45125
 ```
 
 ### 2. Install and register
@@ -29,8 +27,10 @@ RV will listen on port **45124** (default). On Windows:
 **Claude Code (CLI):**
 
 ```bash
-claude mcp add --scope user rv-mcp -- uv run --directory /path/to/RV_MCP rv-mcp
+claude mcp add --scope user rv-mcp -- uv run --no-sync --directory /path/to/RV_MCP rv-mcp
 ```
+
+> **Note:** `--no-sync` prevents file lock conflicts when multiple Claude sessions share the same MCP server. Run `uv sync` manually after changing dependencies.
 
 **Claude Desktop** (`~/.claude.json`):
 
@@ -39,11 +39,18 @@ claude mcp add --scope user rv-mcp -- uv run --directory /path/to/RV_MCP rv-mcp
   "mcpServers": {
     "rv-mcp": {
       "command": "uv",
-      "args": ["run", "--directory", "/path/to/RV_MCP", "rv-mcp"]
+      "args": ["run", "--no-sync", "--directory", "/path/to/RV_MCP", "rv-mcp"]
     }
   }
 }
 ```
+
+**Environment variables** (optional):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `RV_MCP_HOST` | `127.0.0.1` | RV network host |
+| `RV_MCP_PORT` | `45125` | RV network port |
 
 ### 3. Use it
 
@@ -52,7 +59,7 @@ Ask Claude to load media, control playback, compare shots, or adjust colors. The
 ## Architecture
 
 ```
-Claude (stdio/MCP) --> FastMCP Server --> RV Network Protocol (TCP:45124) --> RV
+Claude (stdio/MCP) --> FastMCP Server --> RV Network Protocol (TCP:45125) --> RV
 ```
 
 The server maintains a **persistent TCP connection** to RV using a custom protocol based on RV's `RvCommunicator`. Key design decisions:
@@ -65,7 +72,7 @@ The server maintains a **persistent TCP connection** to RV using a custom protoc
 ### Protocol Flow
 
 ```
-1. Connect TCP to 127.0.0.1:45124
+1. Connect TCP to 127.0.0.1:45125
 2. Send: NEWGREETING <len> rv-mcp rvController
 3. Send: PINGPONGCONTROL 1 0          (disable heartbeat)
 4. Recv: NEWGREETING <len> <rv-name>   (consume RV's greeting)
@@ -196,7 +203,8 @@ RV_MCP/
         ├── playback.py     # 17 playback/transport tools
         ├── sources.py      # 7 source & session tools
         ├── compare.py      # 4 view/compare tools
-        └── color.py        # 12 color/LUT/CDL tools
+        ├── color.py        # 12 color/LUT/CDL tools
+        └── ocio.py         # OCIO v2 color management tools
 ```
 
 ## Troubleshooting
@@ -204,8 +212,8 @@ RV_MCP/
 ### "Could not connect to RV"
 
 - Ensure RV is running with the `-network` flag
-- Check that port 45124 is not blocked by a firewall
-- Use `-networkPort 45124` to explicitly set the port
+- Check that port 45125 is not blocked by a firewall
+- Use `-networkPort 45125` to explicitly set the port
 
 ### RV rejects connections after a crash
 
