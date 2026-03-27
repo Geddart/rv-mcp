@@ -14,12 +14,12 @@ No plugin required inside RV. Uses RV's built-in network listener with Mu script
 
 ### 1. Start RV with networking
 
-Enable networking in RV via **RV → Networking → Enable Network** (default port **45125**).
+Enable networking in RV via **RV → Networking → Enable Network** (default port **45124**).
 
 Or from the command line:
 
 ```bash
-rv -network -networkPort 45125
+rv -network -networkPort 45124
 ```
 
 ### 2. Install and register
@@ -50,7 +50,7 @@ claude mcp add --scope user rv-mcp -- uv run --no-sync --directory /path/to/RV_M
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `RV_MCP_HOST` | `127.0.0.1` | RV network host |
-| `RV_MCP_PORT` | `45125` | RV network port |
+| `RV_MCP_PORT` | `45124` | RV network port |
 
 ### 3. Use it
 
@@ -59,7 +59,7 @@ Ask Claude to load media, control playback, compare shots, or adjust colors. The
 ## Architecture
 
 ```
-Claude (stdio/MCP) --> FastMCP Server --> RV Network Protocol (TCP:45125) --> RV
+Claude (stdio/MCP) --> FastMCP Server --> RV Network Protocol (TCP:45124) --> RV
 ```
 
 The server maintains a **persistent TCP connection** to RV using a custom protocol based on RV's `RvCommunicator`. Key design decisions:
@@ -72,7 +72,7 @@ The server maintains a **persistent TCP connection** to RV using a custom protoc
 ### Protocol Flow
 
 ```
-1. Connect TCP to 127.0.0.1:45125
+1. Connect TCP to 127.0.0.1:45124
 2. Send: NEWGREETING <len> rv-mcp rvController
 3. Send: PINGPONGCONTROL 1 0          (disable heartbeat)
 4. Recv: NEWGREETING <len> <rv-name>   (consume RV's greeting)
@@ -83,7 +83,63 @@ The server maintains a **persistent TCP connection** to RV using a custom protoc
    Send: MESSAGE <len> DISCONNECT
 ```
 
-## Tools (41 total)
+## OCIO Color Management
+
+The server includes full OCIO v2 support. When `$OCIO` is set, RV can match the exact display transform used by your DCC apps (3ds Max/Redshift, Nuke, etc.).
+
+### Auto-configuration
+
+An `rv_ocio_setup.py` script is included that auto-configures OCIO when RV loads media:
+
+- **EXR/HDR/TX files** are auto-detected as scene-linear (ACEScg via the `scene_linear` role)
+- **Display transform** is set from the config's defaults (e.g., `sRGB` / `ACES 1.0 SDR-video`)
+- **Chromaticity metadata** in EXRs is matched against the active config's color spaces
+
+To install, copy `rv_ocio_setup.py` to your RV support path:
+
+```bash
+# Windows
+copy rv_ocio_setup.py %APPDATA%\RV\Python\
+
+# Linux/macOS
+cp rv_ocio_setup.py ~/.rv/Python/
+```
+
+RV's built-in `ocio_source_setup` package will detect and use this override automatically.
+
+### Manual OCIO via MCP
+
+| Tool | Description |
+|------|-------------|
+| `get_ocio_config` | List color spaces, displays, views, and looks from the active OCIO config |
+| `set_ocio_colorspace` | Set input color space for a source (inserts OCIOFile node) |
+| `set_ocio_display` | Set display transform (inserts OCIODisplay node) |
+| `set_ocio_look` | Apply an OCIO look to a source |
+| `get_ocio_state` | Get current OCIO node state as JSON |
+| `clear_ocio` | Remove OCIO nodes and restore default pipeline |
+
+### Redshift + RV Color Matching
+
+If you use Redshift's OCIO config (`$OCIO = C:\ProgramData\redshift\Data\OCIO\config.ocio`), note that its file rules mark EXRs as "Raw". The `rv_ocio_setup.py` script overrides this by detecting float formats as scene-linear, ensuring the ACES tonemapper is applied in RV just like in Redshift's Render View.
+
+## Tools (47 total)
+
+### Execute (1)
+
+| Tool | Description |
+|------|-------------|
+| `execute_mu` | Run arbitrary Mu code — escape hatch for anything not covered by dedicated tools |
+
+### OCIO (6)
+
+| Tool | Description |
+|------|-------------|
+| `get_ocio_config` | Get OCIO config info (color spaces, displays, views, looks) |
+| `set_ocio_colorspace` | Set OCIO input color space for a source |
+| `set_ocio_display` | Set OCIO display transform |
+| `set_ocio_look` | Apply an OCIO look |
+| `get_ocio_state` | Get current OCIO state as JSON |
+| `clear_ocio` | Remove OCIO nodes, restore defaults |
 
 ### Execute (1)
 
@@ -212,8 +268,8 @@ RV_MCP/
 ### "Could not connect to RV"
 
 - Ensure RV is running with the `-network` flag
-- Check that port 45125 is not blocked by a firewall
-- Use `-networkPort 45125` to explicitly set the port
+- Check that port 45124 is not blocked by a firewall
+- Use `-networkPort 45124` to explicitly set the port
 
 ### RV rejects connections after a crash
 
